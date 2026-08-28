@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalize, parseMoney, reconcile } from '../src/reconcile';
 import { guessMapping, parseCsv } from '../src/csv';
+import { markdownReport } from '../src/report';
 import type { CanonicalRow, SourceKind } from '../src/types';
 
 function row(source: SourceKind, index: number, amount: number, dateOffset = 0, fee = 0): CanonicalRow {
@@ -22,6 +23,11 @@ describe('CSV intake', () => {
     expect(parseMoney('($1,204.50)')).toBe(-1204.5);
     expect(parseMoney('42.10-')).toBe(-42.1);
     expect(() => parseMoney('not money')).toThrow(/valid amount/);
+  });
+
+  it('rejects a blank required amount instead of certifying it as zero', () => {
+    const table = parseCsv('Order ID,Created at,Gross amount\nSECRET-991,2026-08-01,', 'orders', 'orders.csv');
+    expect(() => canonicalize(table, guessMapping(table))).toThrow(/orders\.csv, row 2: Amount is empty/);
   });
 });
 
@@ -57,5 +63,19 @@ describe('reconciliation evidence', () => {
     expect(result.coverage).toBeGreaterThanOrEqual(90);
     expect(result.findings).toHaveLength(1000);
     expect(result.findings.every((item) => item.reason && item.explanation && item.evidence.length)).toBe(true);
+  });
+
+  it('redacts references from Markdown headings and evidence, not only the display column', () => {
+    const order = row('orders', 991, 100);
+    order.reference = 'SECRET-991';
+    const processor = row('processor', 991, 96.8, 1, 3.2);
+    processor.reference = 'PROCESSOR-991';
+    const ledger = row('ledger', 991, 96.8, 2);
+    ledger.reference = 'LEDGER-991';
+    const report = markdownReport(reconcile([order], [processor], [ledger], 7), 'Private casefile', true);
+    expect(report).not.toContain('SECRET-991');
+    expect(report).not.toContain('PROCESSOR-991');
+    expect(report).not.toContain('LEDGER-991');
+    expect(report).toContain('SEC…91');
   });
 });

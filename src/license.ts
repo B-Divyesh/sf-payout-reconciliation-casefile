@@ -1,16 +1,20 @@
 const SLUG = 'payout-reconciliation-casefile';
 const KEY = `sb_license:${SLUG}`;
 const CACHE_KEY = `${KEY}:verdict`;
-const DAY = 86_400_000;
+export const LICENSE_VERIFY_INTERVAL_MS = 86_400_000;
 
-interface Verdict { valid: boolean; checkedAt: number; reason?: string }
+export interface LicenseVerdict { valid: boolean; checkedAt: number; reason?: string }
+
+export function verificationIsDue(cached: LicenseVerdict | undefined, now = Date.now()): boolean {
+  return !cached?.checkedAt || now - cached.checkedAt >= LICENSE_VERIFY_INTERVAL_MS;
+}
 
 export function acceptReturnedLicense(): void {
   const url = new URL(location.href);
   const token = url.searchParams.get('license');
   if (!token) return;
   localStorage.setItem(KEY, token);
-  localStorage.setItem(CACHE_KEY, JSON.stringify({ valid: true, checkedAt: 0 } satisfies Verdict));
+  localStorage.setItem(CACHE_KEY, JSON.stringify({ valid: true, checkedAt: 0 } satisfies LicenseVerdict));
   url.searchParams.delete('license');
   history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
 }
@@ -18,19 +22,21 @@ export function acceptReturnedLicense(): void {
 export function getToken(): string { return localStorage.getItem(KEY) ?? ''; }
 export function storeToken(token: string): void {
   localStorage.setItem(KEY, token.trim());
-  localStorage.setItem(CACHE_KEY, JSON.stringify({ valid: true, checkedAt: 0 } satisfies Verdict));
+  localStorage.setItem(CACHE_KEY, JSON.stringify({ valid: true, checkedAt: 0 } satisfies LicenseVerdict));
 }
 export function clearToken(): void { localStorage.removeItem(KEY); localStorage.removeItem(CACHE_KEY); }
 export function cachedUnlocked(): boolean {
-  try { return Boolean(getToken() && (JSON.parse(localStorage.getItem(CACHE_KEY) ?? '{}') as Verdict).valid); } catch { return false; }
+  try { return Boolean(getToken() && (JSON.parse(localStorage.getItem(CACHE_KEY) ?? '{}') as LicenseVerdict).valid); } catch { return false; }
 }
 
-export async function verifyLicense(force = false): Promise<{ unlocked: boolean; checked: boolean; reason?: string }> {
+export async function verifyLicense(): Promise<{ unlocked: boolean; checked: boolean; reason?: string }> {
   const token = getToken();
   if (!token) return { unlocked: false, checked: false };
-  let cached: Verdict | undefined;
-  try { cached = JSON.parse(localStorage.getItem(CACHE_KEY) ?? 'null') as Verdict; } catch { /* ignore invalid cache */ }
-  if (!force && cached?.checkedAt && Date.now() - cached.checkedAt < DAY) return { unlocked: cached.valid, checked: false, reason: cached.reason };
+  let cached: LicenseVerdict | undefined;
+  try { cached = JSON.parse(localStorage.getItem(CACHE_KEY) ?? 'null') as LicenseVerdict; } catch { /* ignore invalid cache */ }
+  // A restore can initiate the first check, but neither repeated button presses
+  // nor background refreshes should turn this static app into a request burst.
+  if (!verificationIsDue(cached)) return { unlocked: cached!.valid, checked: false, reason: cached!.reason };
   try {
     const response = await fetch(`https://api.sociobot.in/api/v1/products/${SLUG}/verify?license=${encodeURIComponent(token)}`);
     if (!response.ok) throw new Error('Verification service unavailable');

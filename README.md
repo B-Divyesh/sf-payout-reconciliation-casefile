@@ -63,7 +63,7 @@ The generated hero source, exact prompt, and review record are in `assets/src/`;
 
 ## Deployment
 
-Deploy the contents of `dist/` as a static site. Route `/privacy/` and `/terms/` to their generated `index.html` files. The service worker is rooted at `/sw.js`; HTTPS is required outside localhost. Product registration, DNS, and billing configuration are factory responsibilities and are intentionally not in this repository.
+Deploy the contents of `dist/` as a static site. Route `/privacy/` and `/terms/` to their generated `index.html` files. The service worker is rooted at `/sw.js`; HTTPS is required outside localhost. `staticwebapp.config.json` carries the CSP, frame/permissions policies, manifest MIME type, and immutable cache policy for Azure Static Web Apps (with `_headers` retained for compatible static hosts). Product registration, DNS, and billing configuration are factory responsibilities and are intentionally not in this repository.
 
 ## License
 

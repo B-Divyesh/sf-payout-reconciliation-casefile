@@ -18,3 +18,24 @@ footer{border-top:var(--line);background:var(--ink);color:var(--sheet);padding:4
 .license-section .button-secondary{color:#171a15}
 footer p{color:#d7dacc;filter:none}
 @media(max-width:480px){.workspace-tools{flex-wrap:wrap;justify-content:flex-start}.workspace-tools>label:first-child{flex:1 1 100%}.workspace-tools>label:first-child input{width:100%}.workspace-tools .text-button{padding-inline:4px}}
+
+/* File inputs keep their native keyboard operation while their visible labels
+   carry the focus ring. This avoids a hidden 1px focus target. */
+.file-trigger,.replace-file,.import-label{position:relative}
+.file-trigger .file-input,.replace-file .file-input,.import-label .file-input{position:absolute;inset:0;width:100%;height:100%;min-height:44px;margin:0;opacity:0;cursor:pointer}
+.file-trigger:focus-within,.replace-file:focus-within,.import-label:focus-within{outline:3px solid var(--blue);outline-offset:3px}
+.template-link{display:inline-flex;align-items:center;min-height:44px}
+nav a,footer a{display:inline-flex;align-items:center;min-height:44px}
+.check-label{min-height:44px}
+.check-label input{width:44px;height:44px;margin:0}
+
+/* Keep the night-ledger footer truly dark: --ink is intentionally light in
+   dark mode so using it as a footer fill inverted the intended contrast. */
+footer{background:#171a15;color:#f7f2e7}
+footer p{color:#d7dacc;filter:none}
+.brand-footer .brand-mark i{background:#171a15;border-color:#f7f2e7}
+
+@media(prefers-color-scheme:dark){
+  :root{--blue:#3d5cc9}
+  .license-section .button-secondary{background:#fff;color:#171a15}
+}

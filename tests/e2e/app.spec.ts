@@ -20,6 +20,15 @@ test('sample workflow produces and exports an explainable casefile', async ({ pa
   expect(consoleErrors).toEqual([]);
 });
 
+test('dark results at a narrow viewport have no serious contrast failures', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Try sample data' }).click();
+  await page.getByRole('button', { name: 'Reconcile 3 sources' }).click();
+  const accessibility = await new AxeBuilder({ page }).analyze();
+  expect(accessibility.violations.filter((issue) => ['serious', 'critical'].includes(issue.impact ?? ''))).toEqual([]);
+});
+
 test('mobile workspace fits the viewport and keyboard reaches source actions', async ({ page }) => {
   await page.goto('/');
   await page.keyboard.press('Tab');
@@ -30,17 +39,48 @@ test('mobile workspace fits the viewport and keyboard reaches source actions', a
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
+test('file and backup inputs show a visible focus treatment', async ({ page }) => {
+  await page.goto('/');
+  for (const id of ['file-orders', 'file-processor', 'file-ledger', 'import-json']) {
+    const input = page.locator(`#${id}`);
+    await input.focus();
+    await expect(input).toBeFocused();
+    const label = input.locator('xpath=..');
+    await expect(label).toHaveCSS('outline-style', 'solid');
+    const box = await input.boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
 test('app shell and saved state reload while offline', async ({ page, context }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try sample data' }).click();
   await page.getByRole('button', { name: 'Reconcile 3 sources' }).click();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
+  const shellAssets = await page.evaluate(async () => {
+    const entries = await caches.keys();
+    const urls = await Promise.all(entries.map(async (key) => (await caches.open(key)).keys().then((requests) => requests.map((request) => new URL(request.url).pathname))));
+    return urls.flat();
+  });
+  expect(shellAssets.some((url) => /^\/assets\/main-.*\.js$/.test(url))).toBe(true);
+  expect(shellAssets.some((url) => /^\/assets\/main-.*\.css$/.test(url))).toBe(true);
+  const session = await context.newCDPSession(page);
+  await session.send('Network.clearBrowserCache');
+  await session.detach();
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByText('Offline', { exact: true })).toBeVisible();
   await expect(page.getByText('sample-orders.csv')).toBeVisible();
   await context.setOffline(false);
+});
+
+test('the configured hosted checkout is available', async ({ request }) => {
+  const response = await request.get('https://api.sociobot.in/api/v1/products/payout-reconciliation-casefile/checkout', { maxRedirects: 0 });
+  expect(response.status()).toBeGreaterThanOrEqual(300);
+  expect(response.status()).toBeLessThan(400);
+  expect(response.headers().location).toMatch(/^https:\/\/checkout\.dodopayments\.com\//);
 });
 
 test('legal pages are available', async ({ page }) => {

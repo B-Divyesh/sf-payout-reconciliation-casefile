@@ -8,6 +8,13 @@ const displayRef = (finding: Finding, redacted: boolean): string => {
   return redacted ? redactRef(ref) : ref;
 };
 
+function redactFindingText(value: string, finding: Finding): string {
+  const references = [finding.order?.reference, finding.processor?.reference, finding.ledger?.reference]
+    .filter((reference): reference is string => Boolean(reference))
+    .sort((a, b) => b.length - a.length);
+  return references.reduce((text, reference) => text.replaceAll(reference, redactRef(reference)), value);
+}
+
 export function markdownReport(result: ReconciliationResult, name: string, redacted: boolean): string {
   const groups = ['explained', 'review', 'unmatched'] as const;
   const lines = [
@@ -28,7 +35,10 @@ export function markdownReport(result: ReconciliationResult, name: string, redac
     lines.push('', `## ${status.charAt(0).toUpperCase()}${status.slice(1)} (${items.length})`, '');
     if (!items.length) lines.push('_None._');
     for (const item of items) {
-      lines.push(`### ${displayRef(item, redacted)} — ${item.title}`, '', `${item.explanation}`, '', ...item.evidence.map((line) => `- ${line}`), '');
+      const title = redacted ? redactFindingText(item.title, item) : item.title;
+      const explanation = redacted ? redactFindingText(item.explanation, item) : item.explanation;
+      const evidence = redacted ? item.evidence.map((line) => redactFindingText(line, item)) : item.evidence;
+      lines.push(`### ${displayRef(item, redacted)} — ${title}`, '', explanation, '', ...evidence.map((line) => `- ${line}`), '');
     }
   }
   lines.push('---', 'Created locally with Payout Reconciliation Casefile. Customer fields are never transmitted.');

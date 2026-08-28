@@ -1,10 +1,21 @@
-const VERSION = 'casefile-v1.0.0';
+const VERSION = 'casefile-v1.0.1';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const CORE = ['/', '/index.html', '/offline.html', '/manifest.webmanifest', '/assets/hero-casefile.webp', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-512.png'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(SHELL).then((cache) => cache.addAll(CORE)));
+  event.waitUntil((async () => {
+    const cache = await caches.open(SHELL);
+    // Vite fingerprints its entry JS/CSS. Read the built document during
+    // installation so the exact current asset names are part of the shell,
+    // rather than relying on the browser's evictable HTTP cache offline.
+    const documentResponse = await fetch('/index.html', { cache: 'reload' });
+    if (!documentResponse.ok) throw new Error('Could not precache the app shell.');
+    const documentText = await documentResponse.clone().text();
+    const entryAssets = [...documentText.matchAll(/(?:src|href)="(\/assets\/[^"?#]+(?:\?[^"#]*)?)"/g)]
+      .map((match) => match[1]);
+    await cache.addAll([...new Set([...CORE, ...entryAssets])]);
+  })());
 });
 self.addEventListener('activate', (event) => {
   event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => ![SHELL, RUNTIME].includes(key)).map((key) => caches.delete(key)))).then(() => self.clients.claim()));

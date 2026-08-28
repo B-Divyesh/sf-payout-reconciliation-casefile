@@ -18,7 +18,7 @@ The default is an explicitly light, paper-led treatment. A dark “night ledger�
 | `--muted` | `#5C6257` | `#B9C0B1` | secondary text (≥4.5:1) |
 | `--signal` | `#C7F000` | `#D1F53A` | primary action / reconciliation highlighter |
 | `--signal-ink` | `#111500` | `#111500` | text on signal |
-| `--blue` | `#275DFF` | `#80A0FF` | linked / informational evidence |
+| `--blue` | `#275DFF` | `#3D5CC9` | linked / informational evidence; deepened in night mode to keep white evidence labels above 4.5:1 |
 | `--success` | `#177245` | `#6DD69D` | explained / balanced |
 | `--warning` | `#8A4B00` | `#FFC36B` | bounded review |
 | `--danger` | `#B42318` | `#FF8E86` | invalid / missing |

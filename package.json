@@ -7,8 +7,8 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "vitest run tests/reconcile.test.ts && playwright test",
-    "test:unit": "vitest run tests/reconcile.test.ts",
+    "test": "vitest run tests/reconcile.test.ts tests/license.test.ts tests/deploy-config.test.ts && playwright test",
+    "test:unit": "vitest run tests/reconcile.test.ts tests/license.test.ts tests/deploy-config.test.ts",
     "test:e2e": "playwright test"
   },
   "devDependencies": {

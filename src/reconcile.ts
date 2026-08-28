@@ -20,9 +20,11 @@ export function canonicalize(table: CsvTable, mapping: ColumnMap): CanonicalRow[
   return table.rows.map((raw, index) => {
     const reference = raw[mapping.reference]?.trim() ?? '';
     const rawDate = raw[mapping.date]?.trim() ?? '';
+    const rawAmount = raw[mapping.amount]?.trim() ?? '';
     const timestamp = Date.parse(rawDate);
     if (!reference) throw new Error(`${table.fileName}, row ${index + 2}: Reference is empty.`);
     if (!Number.isFinite(timestamp)) throw new Error(`${table.fileName}, row ${index + 2}: “${rawDate}” is not a recognized date.`);
+    if (!rawAmount) throw new Error(`${table.fileName}, row ${index + 2}: Amount is empty. Enter a monetary value or remove this row before reconciling.`);
     try {
       return {
         key: `${table.kind}-${index + 2}`,
@@ -32,7 +34,7 @@ export function canonicalize(table: CsvTable, mapping: ColumnMap): CanonicalRow[
         normalizedReference: normalizeRef(reference),
         date: new Date(timestamp).toISOString().slice(0, 10),
         timestamp,
-        amount: parseMoney(raw[mapping.amount] ?? ''),
+        amount: parseMoney(rawAmount),
         fee: mapping.fee ? Math.abs(parseMoney(raw[mapping.fee] ?? '')) : 0,
         refund: mapping.refund ? Math.abs(parseMoney(raw[mapping.refund] ?? '')) : 0,
         customer: mapping.customer ? raw[mapping.customer]?.trim() ?? '' : '',
