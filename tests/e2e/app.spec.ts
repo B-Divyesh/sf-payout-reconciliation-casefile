@@ -87,3 +87,22 @@ test('legal pages are available', async ({ page }) => {
   await page.goto('/privacy/'); await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacy, in plain terms.');
   await page.goto('/terms/'); await expect(page.getByRole('heading', { level: 1 })).toHaveText('Terms of use.');
 });
+
+test('all visible links meet the 44px touch-target minimum at 390px', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  for (const path of ['/', '/privacy/', '/terms/']) {
+    await page.goto(path);
+    const links = page.locator('a:visible');
+    const count = await links.count();
+
+    for (let index = 0; index < count; index += 1) {
+      const link = links.nth(index);
+      const box = await link.boundingBox();
+      const label = (await link.innerText()).trim() || (await link.getAttribute('aria-label')) || `link ${index + 1}`;
+      expect(box, `${path} ${label} has a measurable hit area`).not.toBeNull();
+      expect(box!.width, `${path} ${label} width`).toBeGreaterThanOrEqual(44);
+      expect(box!.height, `${path} ${label} height`).toBeGreaterThanOrEqual(44);
+    }
+  }
+});
