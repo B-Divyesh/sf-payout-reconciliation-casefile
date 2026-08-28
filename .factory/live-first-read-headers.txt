@@ -1,4 +1,4 @@
-HTTP/2 200 
+HTTP/2 200
 content-type: text/html
 date: Fri, 28 Aug 2026 09:46:01 GMT
 cache-control: public, must-revalidate, max-age=30
