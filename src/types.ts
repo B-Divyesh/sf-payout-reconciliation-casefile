@@ -52,6 +52,7 @@ export interface Finding {
 
 export interface ReconciliationResult {
   createdAt: string;
+  currency: string;
   findings: Finding[];
   sourceCounts: Record<SourceKind, number>;
   totals: { orders: number; processor: number; ledger: number; variance: number };

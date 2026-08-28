@@ -65,6 +65,9 @@ function finding(reason: FindingReason, status: Finding['status'], amount: numbe
 }
 
 export function reconcile(orders: CanonicalRow[], processor: CanonicalRow[], ledger: CanonicalRow[], windowDays: number): ReconciliationResult {
+  const currencies = new Set([...orders, ...processor, ...ledger].map((row) => row.currency || 'USD'));
+  if (currencies.size > 1) throw new Error(`This casefile contains multiple currencies (${[...currencies].join(', ')}). Split the exports by currency so totals remain defensible.`);
+  const currency = [...currencies][0] ?? 'USD';
   const findings: Finding[] = [];
   const usedProcessor = new Set<string>();
   const usedLedger = new Set<string>();
@@ -126,7 +129,7 @@ export function reconcile(orders: CanonicalRow[], processor: CanonicalRow[], led
   const unresolvedAmount = cents(absolute('unmatched'));
   const denominator = explainedAmount + reviewedAmount + unresolvedAmount;
   return {
-    createdAt: new Date().toISOString(), findings,
+    createdAt: new Date().toISOString(), currency, findings,
     sourceCounts: { orders: orders.length, processor: processor.length, ledger: ledger.length },
     totals: { orders: totalOrders, processor: totalProcessor, ledger: totalLedger, variance: cents(totalOrders - totalLedger) },
     explainedAmount, reviewedAmount, unresolvedAmount,

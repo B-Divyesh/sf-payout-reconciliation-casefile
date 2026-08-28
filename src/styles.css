@@ -11,3 +11,10 @@ footer{border-top:var(--line);background:var(--ink);color:var(--sheet);padding:4
 @media(max-width:480px){.brand>span:last-child{font-size:.78rem}.hero-copy .eyebrow{max-width:30ch}.hero-actions{display:grid}.hero-actions .button{width:100%}.trust-list{display:grid;gap:8px}.hero-art figcaption{font-size:.66rem}.section-heading{display:block}.workspace-tools{margin-top:20px;justify-content:space-between}.workspace-tools input{width:190px}.mapping-grid{grid-template-columns:1fr}.result-heading{display:grid;grid-template-columns:1fr auto}.result-heading p:not(.eyebrow){display:none}.finding summary{grid-template-columns:36px 1fr}.finding-amount{grid-column:2}.finding-body{padding:0 16px 20px}.export-actions{display:grid}.filter-button{flex:1 1 42%}#restore-form>div{display:grid;gap:8px}footer>div:last-child{display:grid}}
 @media(prefers-color-scheme:dark){:root{color-scheme:dark;--paper:#161813;--sheet:#22251e;--ink:#f7f2e7;--muted:#b9c0b1;--signal:#d1f53a;--signal-ink:#111500;--blue:#80a0ff;--success:#6dd69d;--warning:#ffc36b;--danger:#ff8e86}.button-primary,.totals-strip .variance{border-color:#111500;box-shadow:4px 4px 0 #111500}.hero-art{filter:saturate(.9) brightness(.82)}.license-section{background:#233b89;color:#fff}.license-section a:not(.button){color:#fff}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.hero-art{transform:none}.coverage-seal,.license-stamp{transform:none}}
+
+/* Explicit contrast fixes for decorative evidence marks and blue unlock panel. */
+.source-number{color:var(--muted)}
+.legal-note{color:#fff}
+.license-section .button-secondary{color:#171a15}
+footer p{color:#d7dacc;filter:none}
+@media(max-width:480px){.workspace-tools{flex-wrap:wrap;justify-content:flex-start}.workspace-tools>label:first-child{flex:1 1 100%}.workspace-tools>label:first-child input{width:100%}.workspace-tools .text-button{padding-inline:4px}}

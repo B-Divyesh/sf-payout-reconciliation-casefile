@@ -31,7 +31,7 @@ let archives: ArchiveItem[] = [];
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 const esc = (value: unknown): string => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]!);
-const money = (value: number): string => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+const money = (value: number, currency = 'USD'): string => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value);
 const statusLabel: Record<FindingStatus, string> = { explained: 'Explained', review: 'Bounded review', unmatched: 'Unmatched' };
 
 function sourceCard(kind: SourceKind): string {
@@ -77,13 +77,13 @@ function resultsView(): string {
     <div class="result-heading"><div><p class="eyebrow">Casefile evidence</p><h2 id="results-title">${result.coverage}% bounded</h2><p>Explained or isolated into a reviewable group—not silently dropped.</p></div>
       <div class="coverage-seal" aria-label="${result.coverage} percent coverage"><strong>${result.coverage}%</strong><span>coverage</span></div></div>
     <div class="totals-strip" aria-label="Source totals">
-      <div><span>Orders</span><strong>${money(result.totals.orders)}</strong></div><div><span>Processor</span><strong>${money(result.totals.processor)}</strong></div><div><span>Ledger</span><strong>${money(result.totals.ledger)}</strong></div><div class="variance"><span>Variance</span><strong>${money(result.totals.variance)}</strong></div>
+      <div><span>Orders</span><strong>${money(result.totals.orders, result.currency)}</strong></div><div><span>Processor</span><strong>${money(result.totals.processor, result.currency)}</strong></div><div><span>Ledger</span><strong>${money(result.totals.ledger, result.currency)}</strong></div><div class="variance"><span>Variance</span><strong>${money(result.totals.variance, result.currency)}</strong></div>
     </div>
     <div class="filter-bar" role="group" aria-label="Filter findings">
       ${(['all', 'explained', 'review', 'unmatched'] as const).map((item) => `<button class="filter-button ${filter === item ? 'is-active' : ''}" data-filter="${item}" aria-pressed="${filter === item}">${item === 'all' ? 'All findings' : statusLabel[item]} <span>${item === 'all' ? result.findings.length : counts(item)}</span></button>`).join('')}
     </div>
     <div class="findings" aria-live="polite">${shown.length ? shown.map((item) => `<details class="finding finding-${item.status}">
-      <summary><span class="status-mark" aria-hidden="true">${item.status === 'explained' ? '✓' : item.status === 'review' ? '!' : '×'}</span><span class="finding-title"><strong>${esc(item.title)}</strong><small>${statusLabel[item.status]} · ${esc(item.reason.replaceAll('_', ' '))}</small></span><span class="finding-amount">${money(item.amount)}</span></summary>
+      <summary><span class="status-mark" aria-hidden="true">${item.status === 'explained' ? '✓' : item.status === 'review' ? '!' : '×'}</span><span class="finding-title"><strong>${esc(item.title)}</strong><small>${statusLabel[item.status]} · ${esc(item.reason.replaceAll('_', ' '))}</small></span><span class="finding-amount">${money(item.amount, result.currency)}</span></summary>
       <div class="finding-body"><p>${esc(item.explanation)}</p><ul>${item.evidence.map((line) => `<li>${esc(line)}</li>`).join('')}</ul><p class="source-rows">Source rows: ${[item.order && `orders ${item.order.rowNumber}`, item.processor && `processor ${item.processor.rowNumber}`, item.ledger && `ledger ${item.ledger.rowNumber}`].filter(Boolean).join(' · ')}</p></div>
     </details>`).join('') : '<p class="no-findings">No findings in this filter.</p>'}</div>
     <div class="export-desk"><div><p class="eyebrow">Shareable evidence</p><h3>Export this casefile</h3><label class="check-label"><input id="redact" type="checkbox" ${redacted ? 'checked' : ''}/><span>Redact order references in exports</span></label><p>Customer names and emails are never included. Redaction is on by default.</p></div>

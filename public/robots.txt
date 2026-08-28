@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://payout-reconciliation-casefile.sociobot.in/sitemap.xml

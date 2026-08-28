@@ -16,10 +16,10 @@ export function markdownReport(result: ReconciliationResult, name: string, redac
     '', '> Evidence summary only. This is not tax or accounting advice.',
     '', '## Source totals', '',
     '| Source | Rows | Total |', '| --- | ---: | ---: |',
-    `| Orders | ${result.sourceCounts.orders} | ${money(result.totals.orders)} |`,
-    `| Processor | ${result.sourceCounts.processor} | ${money(result.totals.processor)} |`,
-    `| Ledger | ${result.sourceCounts.ledger} | ${money(result.totals.ledger)} |`,
-    `| Order → ledger variance |  | ${money(result.totals.variance)} |`,
+    `| Orders | ${result.sourceCounts.orders} | ${result.currency} ${money(result.totals.orders)} |`,
+    `| Processor | ${result.sourceCounts.processor} | ${result.currency} ${money(result.totals.processor)} |`,
+    `| Ledger | ${result.sourceCounts.ledger} | ${result.currency} ${money(result.totals.ledger)} |`,
+    `| Order → ledger variance |  | ${result.currency} ${money(result.totals.variance)} |`,
     '', `**Coverage:** ${result.coverage}% of exception value is explained or placed in a bounded review group.`,
     '', `**Identifiers:** ${redacted ? 'Redacted by default.' : 'Included at the exporter’s direction.'}`
   ];
