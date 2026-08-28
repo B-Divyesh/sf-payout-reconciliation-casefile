@@ -1,0 +1,30 @@
+{
+  "slug": "payout-reconciliation-casefile",
+  "title": "Payout Reconciliation Casefile",
+  "territory": "utilities",
+  "user": "A small ecommerce operator or their accountant who needs to explain exactly why an order, processor payout, and ledger total do not agree.",
+  "evidence": [
+    {
+      "url": "https://hn.algolia.com/api/v1/items/49399160",
+      "date": "2026-08-22",
+      "quote_or_summary": "An ecommerce reconciliation prototype author asks operators and accountants what is most frustrating about connecting Shopify, payment providers, and accounting software and explaining mismatches."
+    },
+    {
+      "url": "https://github.com/firefly-iii/firefly-iii/issues/12532",
+      "date": "2026-07-27",
+      "quote_or_summary": "A finance-import issue reports a pagination request that silently drops all transactions for large-history accounts, the exact class of discrepancy that needs an auditable explanation."
+    }
+  ],
+  "recurrence": "Two independent 2026 finance contexts; one explicitly seeks mismatch explanations and another documents silent transaction loss, a high-severity close-of-books risk.",
+  "current_workaround": "Export CSVs from Shopify, Stripe/PayPal, and accounting software; use VLOOKUPs and manually annotate exceptions in a spreadsheet.",
+  "incumbents_and_gap": "A2X, Synder, Link My Books, and accounting suites automate posting, but small operators need a neutral, source-file-based casefile before trusting an automation or escalating an exception.",
+  "smallest_useful_product": "Offline matcher for three CSV exports that groups expected fees, refunds, timing windows, and unmatched records into shareable Markdown/CSV casefiles. Non-goals: connecting accounts, posting journal entries, VAT calculation, or automated bookkeeping.",
+  "success_measure": "For a seeded 1,000-order dataset, it assigns a reason or a bounded exception group to at least 90% of unmatched amount without manual row-by-row filtering.",
+  "artifact_class": "pwa-offline",
+  "monetization": "one-time — periodic reconciliation benefits from a local tool with no ongoing access to financial accounts.",
+  "constraints": "Local-only processing; configurable fuzzy-match windows; no tax or accounting advice; reports must redact customer identifiers by default.",
+  "est_build_effort": "M",
+  "why_distinct": "It creates explainable exception evidence from exports rather than competing as an ecommerce accounting system.",
+  "confidence": 4,
+  "state": "RESEARCHED"
+}
