@@ -32,8 +32,8 @@ The headline names the job. The next sentence names small ecommerce operators an
 | Settlements, net and fees | 4 |
 | Deposits or clearing entries | 4 |
 | Use gross order amounts and settled net processor or ledger amounts. | 11 |
-| References and amounts must fall inside this window. | 8 |
-| Amount tolerance is 2¢. | 4 |
+| Every match must fall inside this date window. | 8 |
+| Amount agreement uses a 2¢ tolerance. | 6 |
 | No casefile yet | 3 |
 | Load the three sample files to see how fees, refunds, timing shifts, and source-only rows become an auditable explanation. | 19 |
 
