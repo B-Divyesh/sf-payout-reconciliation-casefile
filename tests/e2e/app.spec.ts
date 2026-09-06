@@ -1,45 +1,31 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-test('sample workflow produces and exports an explainable casefile', async ({ page }) => {
-  const consoleErrors: string[] = [];
-  page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+test('landing page states the job, audience, and first actions', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/Payout Reconciliation Casefile/);
-  await expect(page.locator('h1')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Try sample data' }).click();
-  await expect(page.getByText('sample-orders.csv')).toBeVisible();
-  await page.getByRole('button', { name: 'Reconcile 3 sources' }).click();
-  await expect(page.getByRole('heading', { name: /% bounded/ })).toBeVisible();
-  await expect(page.getByText(/Expected fee on ORD-1001/)).toBeVisible();
-  const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export Markdown' }).click();
-  expect((await download).suggestedFilename()).toMatch(/\.md$/);
-  const accessibility = await new AxeBuilder({ page }).analyze();
-  expect(accessibility.violations.filter((issue) => ['serious', 'critical'].includes(issue.impact ?? ''))).toEqual([]);
-  expect(consoleErrors).toEqual([]);
+  await expect(page).toHaveTitle('Payout Reconciliation Casefile — Explain mismatches');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Explain payout mismatches from three exports');
+  await expect(page.getByText(/small ecommerce operators and accountants/i)).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Try it with sample data' }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Choose your CSV files' })).toBeVisible();
 });
 
-test('dark results at a narrow viewport have no serious contrast failures', async ({ page }) => {
+test('dark demo results have no serious accessibility failures', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Try sample data' }).click();
-  await page.getByRole('button', { name: 'Reconcile 3 sources' }).click();
+  await page.goto('/demo/');
   const accessibility = await new AxeBuilder({ page }).analyze();
   expect(accessibility.violations.filter((issue) => ['serious', 'critical'].includes(issue.impact ?? ''))).toEqual([]);
 });
 
-test('mobile workspace fits the viewport and keyboard reaches source actions', async ({ page }) => {
-  await page.goto('/');
+test('mobile demo fits the viewport and begins with the skip link', async ({ page }) => {
+  await page.goto('/demo/');
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('link', { name: 'Skip to reconciliation workspace' })).toBeFocused();
-  await page.getByRole('button', { name: 'Try sample data' }).click();
-  await page.getByRole('button', { name: 'Reconcile 3 sources' }).click();
+  await expect(page.getByRole('link', { name: 'Skip to sample casefile' })).toBeFocused();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
-test('file and backup inputs show a visible focus treatment', async ({ page }) => {
+test('file and backup inputs show focus on their visible controls', async ({ page }) => {
   await page.goto('/');
   for (const id of ['file-orders', 'file-processor', 'file-ledger', 'import-json']) {
     const input = page.locator(`#${id}`);
@@ -53,56 +39,71 @@ test('file and backup inputs show a visible focus treatment', async ({ page }) =
   }
 });
 
-test('app shell and saved state reload while offline', async ({ page, context }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Try sample data' }).click();
-  await page.getByRole('button', { name: 'Reconcile 3 sources' }).click();
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.reload();
-  const shellAssets = await page.evaluate(async () => {
-    const entries = await caches.keys();
-    const urls = await Promise.all(entries.map(async (key) => (await caches.open(key)).keys().then((requests) => requests.map((request) => new URL(request.url).pathname))));
-    return urls.flat();
-  });
-  expect(shellAssets.some((url) => /^\/assets\/main-.*\.js$/.test(url))).toBe(true);
-  expect(shellAssets.some((url) => /^\/assets\/main-.*\.css$/.test(url))).toBe(true);
-  const session = await context.newCDPSession(page);
-  await session.send('Network.clearBrowserCache');
-  await session.detach();
-  await context.setOffline(true);
-  await page.reload();
-  await expect(page.getByText('Offline', { exact: true })).toBeVisible();
-  await expect(page.getByText('sample-orders.csv')).toBeVisible();
-  await context.setOffline(false);
+test('legal pages use route titles and the shared navigation skeleton', async ({ page }) => {
+  for (const route of [
+    { path: '/privacy/', title: 'Privacy — Payout Reconciliation Casefile', heading: 'Privacy for your payout files' },
+    { path: '/terms/', title: 'Terms — Payout Reconciliation Casefile', heading: 'Terms for payout reconciliation' }
+  ]) {
+    await page.goto(route.path);
+    await expect(page).toHaveTitle(route.title);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(route.heading);
+    await expect(page.getByRole('navigation', { name: 'Primary' })).toBeVisible();
+    await expect(page.getByText('Built by Param Factory')).toBeVisible();
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', new RegExp(`${route.path.replaceAll('/', '\\/')}$`));
+  }
 });
 
-test('the configured hosted checkout is available', async ({ request }) => {
-  const response = await request.get('https://api.sociobot.in/api/v1/products/payout-reconciliation-casefile/checkout', { maxRedirects: 0 });
-  expect(response.status()).toBeGreaterThanOrEqual(300);
-  expect(response.status()).toBeLessThan(400);
-  expect(response.headers().location).toMatch(/^https:\/\/checkout\.dodopayments\.com\//);
-});
-
-test('legal pages are available', async ({ page }) => {
-  await page.goto('/privacy/'); await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacy, in plain terms.');
-  await page.goto('/terms/'); await expect(page.getByRole('heading', { level: 1 })).toHaveText('Terms of use.');
-});
-
-test('all visible links meet the 44px touch-target minimum at 390px', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-
-  for (const path of ['/', '/privacy/', '/terms/']) {
-    await page.goto(path);
-    const links = page.locator('a:visible');
-    const count = await links.count();
-
-    for (let index = 0; index < count; index += 1) {
-      const link = links.nth(index);
-      const box = await link.boundingBox();
-      const label = (await link.innerText()).trim() || (await link.getAttribute('aria-label')) || `link ${index + 1}`;
-      expect(box, `${path} ${label} has a measurable hit area`).not.toBeNull();
-      expect(box!.width, `${path} ${label} width`).toBeGreaterThanOrEqual(44);
-      expect(box!.height, `${path} ${label} height`).toBeGreaterThanOrEqual(44);
+test('all visible links meet the 44px target at phone and desktop widths', async ({ page }) => {
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    for (const path of ['/', '/demo/', '/privacy/', '/terms/', '/404.html']) {
+      await page.goto(path);
+      const links = page.locator('a:visible');
+      for (let index = 0; index < await links.count(); index += 1) {
+        const link = links.nth(index);
+        const box = await link.boundingBox();
+        const label = (await link.innerText()).trim() || (await link.getAttribute('aria-label')) || `link ${index + 1}`;
+        expect(box, `${width}px ${path} ${label}`).not.toBeNull();
+        expect(box!.width, `${width}px ${path} ${label} width`).toBeGreaterThanOrEqual(44);
+        expect(box!.height, `${width}px ${path} ${label} height`).toBeGreaterThanOrEqual(44);
+      }
     }
   }
+});
+
+test('unknown pages use the designed 404 document in deployment configuration', async ({ page }) => {
+  await page.goto('/404.html');
+  await expect(page).toHaveTitle('Page not found — Payout Reconciliation Casefile');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Return to the payout workspace');
+  await expect(page.getByRole('link', { name: 'Open the workspace' })).toBeVisible();
+});
+
+test('every public document has complete route metadata and one main heading', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('pageerror', (error) => errors.push(error.message));
+  for (const path of ['/', '/demo/', '/privacy/', '/terms/', '/404.html', '/offline.html']) {
+    await page.goto(path);
+    expect((await page.title()).length, `${path} title length`).toBeLessThanOrEqual(60);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.locator('main')).toHaveCount(1);
+    await expect(page.locator('h1')).toHaveCount(1);
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /\S/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /^https:\/\/payout-reconciliation-casefile\.sociobot\.in\//);
+    await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveCount(1);
+    await expect(page.locator('meta[property="og:title"]')).toHaveCount(1);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /sf-payout-reconciliation-casefile-social\.jpg$/);
+    await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+  }
+  expect(errors).toEqual([]);
+});
+
+test('a rejected returned license can be removed from the locked screen', async ({ page }) => {
+  await page.route('https://api.sociobot.in/**', async (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"valid":false,"reason":"invalid"}' }));
+  await page.goto('/?license=qa-invalid-browser-token');
+  await expect(page).not.toHaveURL(/license=/);
+  await expect(page.getByRole('button', { name: 'Remove stored license' })).toBeVisible();
+  await page.getByRole('button', { name: 'Remove stored license' }).click();
+  await expect(page.locator('#toast')).toHaveText('License removed from this device.');
+  expect(await page.evaluate(() => localStorage.getItem('sb_license:payout-reconciliation-casefile'))).toBeNull();
 });

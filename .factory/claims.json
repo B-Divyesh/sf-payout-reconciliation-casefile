@@ -1,0 +1,65 @@
+[
+  {
+    "id": "demo-sandbox",
+    "claim": "The one-click sample opens a completed casefile without changing the real workspace.",
+    "where": "landing first screen, demo banner, README",
+    "test": "npx playwright test tests/e2e/claims.spec.ts --project=desktop --grep \"@claim:demo-sandbox\"",
+    "sandbox": "fresh browser context; enter /demo/, edit and reset it, then confirm a real workspace remains unchanged"
+  },
+  {
+    "id": "local-processing",
+    "claim": "Reconciliation runs in the browser and source files are not uploaded.",
+    "where": "landing facts, workspace, privacy, README",
+    "test": "npx playwright test tests/e2e/claims.spec.ts --project=desktop --grep \"@claim:local-processing\"",
+    "sandbox": "fresh browser context; record every request through the demo reconcile and export flow; allow only the product origin"
+  },
+  {
+    "id": "offline-reload",
+    "claim": "The app works offline after the first successful visit.",
+    "where": "landing facts, privacy, README",
+    "test": "npx playwright test tests/e2e/claims.spec.ts --project=desktop --grep \"@claim:offline-reload\"",
+    "sandbox": "new browser context; load /demo/, confirm precached fingerprinted assets, clear HTTP cache, go offline, and reload"
+  },
+  {
+    "id": "redacted-reports",
+    "claim": "Markdown and CSV reports hide references by default and omit mapped customer details.",
+    "where": "landing facts, export panel, privacy, README",
+    "test": "npx playwright test tests/e2e/claims.spec.ts --project=desktop --grep \"@claim:redacted-reports\"",
+    "sandbox": "clean /demo/ data; download both reports and inspect their contents and CSV row count"
+  },
+  {
+    "id": "matching-boundaries",
+    "claim": "Matches stay inside the chosen date window, and unequal amounts are not marked explained.",
+    "where": "matching controls, How it works, README",
+    "test": "npx playwright test tests/e2e/claims.spec.ts --project=desktop --grep \"@claim:matching-boundaries\"",
+    "sandbox": "replace demo files with same-reference $100/$1 and 120-day fixtures; assert review and unmatched outcomes"
+  },
+  {
+    "id": "workspace-persistence",
+    "claim": "An explicitly imported real workspace persists after reload.",
+    "where": "README, privacy",
+    "test": "npx playwright test tests/e2e/claims.spec.ts --project=desktop --grep \"@claim:workspace-persistence\"",
+    "sandbox": "export the shipped demo workspace, explicitly start for real, import it, and reload a clean browser context"
+  },
+  {
+    "id": "csv-intake",
+    "claim": "Blank required amounts are rejected, and replacing the file recovers the workflow.",
+    "where": "CSV expectations, input errors",
+    "test": "npx playwright test tests/e2e/claims.spec.ts --project=desktop --grep \"@claim:csv-intake\"",
+    "sandbox": "replace demo files with a blank-amount fixture, observe the error, then replace it with valid CSV"
+  },
+  {
+    "id": "paid-analyst-tools",
+    "claim": "A $29 one-time license adds saved mappings, local snapshots, and matching windows up to 60 days.",
+    "where": "pricing section, terms, README",
+    "test": "npx playwright test tests/e2e/claims.spec.ts --project=desktop --grep \"@claim:paid-analyst-tools\"",
+    "sandbox": "recorded valid license verdict; import shipped demo backup, exercise all three tools, then verify the live checkout redirect"
+  },
+  {
+    "id": "accessible-interface",
+    "claim": "The interface supports keyboard use, 44px targets, reduced motion, and serious/critical axe checks.",
+    "where": "README",
+    "test": "npx playwright test tests/e2e/claims.spec.ts --project=desktop --grep \"@claim:accessible-interface\"",
+    "sandbox": "fresh 390px dark/reduced-motion demo; check first focus, every visible target, computed motion, and axe results"
+  }
+]

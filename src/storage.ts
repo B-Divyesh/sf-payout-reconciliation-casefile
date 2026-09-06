@@ -1,4 +1,4 @@
-import type { WorkspaceState } from './types';
+import type { ColumnMap, SourceKind, WorkspaceState } from './types';
 
 const DB_NAME = 'casefile-local-v1';
 const STORE = 'workspace';
@@ -45,6 +45,7 @@ export async function clearWorkspace(): Promise<void> {
 }
 
 export interface ArchiveItem { id: string; name: string; savedAt: string; state: WorkspaceState }
+export interface MappingPreset { kind: SourceKind; headers: string[]; mapping: ColumnMap; savedAt: string }
 
 export async function archiveWorkspace(state: WorkspaceState): Promise<ArchiveItem> {
   const item = { id: crypto.randomUUID(), name: state.name, savedAt: new Date().toISOString(), state };
@@ -67,6 +68,34 @@ export async function loadArchives(): Promise<ArchiveItem[]> {
       const cursor = request.result;
       if (!cursor) { resolve(items.sort((a, b) => b.savedAt.localeCompare(a.savedAt))); return; }
       if (String(cursor.key).startsWith('archive:')) items.push(cursor.value as ArchiveItem);
+      cursor.continue();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function saveMappingPreset(kind: SourceKind, headers: string[], mapping: ColumnMap): Promise<MappingPreset> {
+  const item = { kind, headers: [...headers], mapping: structuredClone(mapping), savedAt: new Date().toISOString() };
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).put(item, `preset:${kind}:${headers.join('\u001f')}`);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  return item;
+}
+
+export async function loadMappingPresets(): Promise<MappingPreset[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const request = tx.objectStore(STORE).openCursor();
+    const items: MappingPreset[] = [];
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) { resolve(items); return; }
+      if (String(cursor.key).startsWith('preset:')) items.push(cursor.value as MappingPreset);
       cursor.continue();
     };
     request.onerror = () => reject(request.error);

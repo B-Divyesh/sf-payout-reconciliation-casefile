@@ -1,55 +1,81 @@
 # Payout Reconciliation Casefile
 
-An offline-first browser utility for small ecommerce operators and accountants who need to explain why an order export, processor settlement export, and ledger export do not agree.
+This offline browser utility is for small ecommerce operators and accountants. It explains differences between order, processor, and ledger CSV exports.
 
-Casefile imports three CSVs, lets the user confirm column mappings, and groups differences into evidence-backed reasons: disclosed processor fees, refunds, settlement timing, missing ledger or processor rows, duplicates, and source-only records. It exports a redacted Markdown casefile and findings CSV without uploading financial data.
+The app groups differences into processor fees, refunds, timing shifts, missing rows, duplicates, and source-only records. It does not connect financial accounts.
 
 Live product: <https://payout-reconciliation-casefile.sociobot.in>
 
-## What v1 includes
+One-click sample: <https://payout-reconciliation-casefile.sociobot.in/demo/>
 
-- Flexible CSV parsing with quoted cells, accounting negatives, common-header detection, and explicit field mapping
-- Reference-first matching with configurable ±1/3/7/14 day windows (up to 60 days with the one-time Analyst unlock) and 2¢ tolerance
-- Explainable, expandable evidence for every match and bounded exception group
-- Redacted-by-default Markdown and CSV reports; customer names/emails are never exported
-- Current-workspace persistence and JSON backup/restore using browser-local IndexedDB
-- $29 one-time Analyst unlock through the Sociobot license API for reusable local archives and wider windows
-- Installable PWA shell with persisted state and tested offline reload
-- Light and OS-driven dark treatments, keyboard paths, 390 px mobile layout, reduced-motion behavior, and accessible semantics
+## What it includes
 
-This tool does not connect accounts, post journal entries, calculate tax/VAT, or provide accounting advice. A casefile should be checked against the original exports.
+- Imports quoted CSV cells, accounting negatives, and common column names.
+- Lets the user confirm every required column mapping.
+- Keeps matches inside the selected date window.
+- Uses a two-cent amount tolerance for amount agreement.
+- Marks linked amount differences for review instead of calling them explained.
+- Exports Markdown and findings CSV with references hidden by default.
+- Omits mapped customer names and emails from those reports.
+- Saves the real workspace in browser IndexedDB.
+- Exports and imports a workspace JSON backup.
+- Works offline after the first successful visit.
+- Supports keyboard use, 44-pixel targets, dark mode, and reduced motion.
+
+The free workspace includes reconciliation, redaction, and all exports. A $29 one-time Analyst license adds three local features:
+
+- Saved column mappings for later files with the same headers.
+- Local snapshots of completed casefiles.
+- Matching windows up to 60 days.
+
+The purchase uses the Sociobot billing API. Sociobot/Dodo is the merchant of record.
+
+This tool does not post entries, calculate tax, or provide accounting advice. Check each casefile against the original exports.
+
+## Demo isolation
+
+Open `/demo/` or select **Try it with sample data**. The demo immediately shows a completed eight-finding payout casefile.
+
+Demo changes stay in memory and never enter the real workspace database. **Reset demo** restores the sample. **Start for real** discards demo changes.
+
+See [`.factory/demo.md`](.factory/demo.md) for the sample and storage boundary.
 
 ## CSV expectations
 
-Each file needs a header row and at least these fields:
+Each file needs a header row and three mapped fields.
 
-| Export | Required | Useful optional fields |
+| Export | Required fields | Useful optional fields |
 | --- | --- | --- |
 | Orders | reference, date, gross amount | refund, customer, currency |
-| Processor | order/reference, settlement date, settled net amount | fee, memo/type, currency |
+| Processor | reference, settlement date, settled net amount | fee, memo, currency |
 | Ledger | reference, posting date, amount | memo, currency |
 
-Column names do not need to match exactly; the mapping step is authoritative. Use the settled **net** amount for processor data. One casefile must contain one currency; split mixed-currency exports before reconciliation. Downloadable templates are included in the UI.
+Column names can differ because the mapping step is authoritative. Use the settled net amount for processor data.
+
+One casefile must contain one currency. Split mixed-currency exports before reconciliation.
 
 ## Develop and verify
 
-Requires Node.js 20+ and npm.
+Install Node.js 20 or later and npm. Then run:
 
 ```bash
 npm ci
 npm run dev
 ```
 
-The exact quality commands are:
+Run every quality gate with:
 
 ```bash
 npm test
 npm run build
+npm audit --audit-level=high
 ```
 
-`npm test` runs Vitest engine tests—including a seeded 1,000-order reconciliation—and Playwright desktop/mobile, accessibility, download, persistence, and offline tests. Playwright 1.58.2 is pinned. `npm run build` type-checks and writes the deployable static site to `dist/`, with `dist/index.html` at its root.
+`npm test` runs Vitest and Playwright. The suite covers reconciliation, demo isolation, downloads, persistence, accessibility, and offline reload.
 
-To inspect the production build:
+Public product claims and their exact commands are in [`.factory/claims.json`](.factory/claims.json). Each command starts from the isolated demo entry point.
+
+Inspect the production build with:
 
 ```bash
 npm run preview
@@ -57,13 +83,23 @@ npm run preview
 
 ## Architecture and privacy
 
-The stack is Vite + vanilla TypeScript. Matching and report generation run on the main thread with no backend dependency. Workspace records live in IndexedDB; the optional license token and once-daily verification verdict live in localStorage. The only runtime cross-origin request is a license verification when a user has supplied a token. There are no analytics, tracking pixels, remote fonts, or CDN scripts.
+The stack is Vite and vanilla TypeScript. Matching and report generation run in the browser.
 
-The generated hero source, exact prompt, and review record are in `assets/src/`; the optimized WebP ships locally. Design decisions and provenance are in [`.factory/design.md`](.factory/design.md).
+Real workspace records use IndexedDB. The demo uses memory and never reads that database.
+
+The optional license token and verification verdict use localStorage. License verification sends only the token to the Sociobot API.
+
+The product has no analytics, tracking pixels, remote fonts, or CDN scripts.
+
+The generated hero source and prompt are in `assets/src/`. Design decisions and provenance are in [`.factory/design.md`](.factory/design.md).
 
 ## Deployment
 
-Deploy the contents of `dist/` as a static site. Route `/privacy/` and `/terms/` to their generated `index.html` files. The service worker is rooted at `/sw.js`; HTTPS is required outside localhost. `staticwebapp.config.json` carries the CSP, frame/permissions policies, manifest MIME type, and immutable cache policy for Azure Static Web Apps (with `_headers` retained for compatible static hosts). Product registration, DNS, and billing configuration are factory responsibilities and are intentionally not in this repository.
+Deploy the contents of `dist/` as a static site. The build emits root, demo, privacy, terms, and 404 documents.
+
+The service worker is rooted at `/sw.js`. HTTPS is required outside localhost.
+
+`staticwebapp.config.json` defines the 404 rewrite, security headers, MIME types, and immutable asset caching. Product registration, DNS, and billing remain factory responsibilities.
 
 ## License
 

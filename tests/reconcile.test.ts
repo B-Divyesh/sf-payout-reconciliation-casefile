@@ -78,4 +78,38 @@ describe('reconciliation evidence', () => {
     expect(report).not.toContain('LEDGER-991');
     expect(report).toContain('SEC…91');
   });
+
+  it('keeps a same-reference amount mismatch in review instead of calling it explained', () => {
+    const order = row('orders', 77, 100);
+    const payout = row('processor', 77, 1, 1);
+    const ledger = row('ledger', 77, 1, 1);
+
+    const result = reconcile([order], [payout], [ledger], 1);
+
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0]).toMatchObject({
+      status: 'review',
+      reason: 'unlinked_source',
+      amount: 99,
+      title: 'Bounded variance for ORD-0077'
+    });
+    expect(result.findings[0]?.explanation).not.toMatch(/amounts agree/i);
+    expect(result.explainedAmount).toBe(0);
+    expect(result.reviewedAmount).toBe(100);
+  });
+
+  it('never links a same-reference row outside the selected date window', () => {
+    const order = row('orders', 88, 100, 0);
+    const payout = row('processor', 88, 100, 120);
+    const ledger = row('ledger', 88, 100, 120);
+
+    const result = reconcile([order], [payout], [ledger], 1);
+
+    expect(result.findings.some((item) => item.reason === 'timing')).toBe(false);
+    expect(result.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ status: 'unmatched', reason: 'missing_processor' }),
+      expect.objectContaining({ status: 'review', title: 'Processor-only row ORD-0088' }),
+      expect.objectContaining({ status: 'review', title: 'Ledger-only row ORD-0088' })
+    ]));
+  });
 });

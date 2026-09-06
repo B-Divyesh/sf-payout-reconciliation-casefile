@@ -1,0 +1,1 @@
+Explain order, payout, and ledger mismatches from CSV exports without uploading financial data.

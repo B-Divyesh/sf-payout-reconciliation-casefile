@@ -1,7 +1,7 @@
-const VERSION = 'casefile-v1.0.1';
+const VERSION = 'casefile-v1.1.0';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
-const CORE = ['/', '/index.html', '/offline.html', '/manifest.webmanifest', '/assets/hero-casefile.webp', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-512.png'];
+const CORE = ['/', '/index.html', '/demo/', '/offline.html', '/manifest.webmanifest', '/assets/hero-casefile.webp', '/assets/sf-payout-reconciliation-casefile-social.jpg', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/icon-maskable-512.png', '/icons/sf-payout-reconciliation-casefile-apple-touch.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {

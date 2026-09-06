@@ -57,7 +57,10 @@ function bestMatch(target: CanonicalRow, candidates: CanonicalRow[], used: Set<s
       const score = (exactRef ? 100 : 0) + (amountFits ? 40 : 0) + Math.max(0, windowDays - days);
       return { candidate, days, exactRef, amountFits, score };
     })
-    .filter(({ days, exactRef, amountFits }) => exactRef || (days <= windowDays && amountFits))
+    // A shared reference is useful evidence, but it never overrides the date
+    // boundary. Inside that boundary it may still link unequal rows so the
+    // result can show one bounded variance instead of three unrelated orphans.
+    .filter(({ days, exactRef, amountFits }) => days <= windowDays && (exactRef || amountFits))
     .sort((a, b) => b.score - a.score)[0]?.candidate;
 }
 
@@ -101,11 +104,11 @@ export function reconcile(orders: CanonicalRow[], processor: CanonicalRow[], led
 
     if (!ledgerRow) {
       findings.push(finding('missing_ledger', 'unmatched', payout.amount, `Payout not found in ledger: ${payout.reference}`, `The processor row matched the order, but no ledger amount was found within ±${windowDays} days.`, { order, processor: payout }, [`Order ${expected.toFixed(2)}`, `Processor ${payout.amount.toFixed(2)}`, `Processor row ${payout.rowNumber}`]));
-    } else if (refundLike) {
-      findings.push(finding('refund', 'explained', Math.abs(order.refund || payout.amount), `Refund carried through for ${order.reference}`, 'A refund or negative settlement is present and the processor amount is represented in the ledger.', { order, processor: payout, ledger: ledgerRow }, [`Order refund ${order.refund.toFixed(2)}`, `Processor ${payout.amount.toFixed(2)}`, `Ledger ${ledgerRow.amount.toFixed(2)}`]));
+    } else if (refundLike && ledgerFits && (close(expected, payout.amount) || feeFits)) {
+      findings.push(finding('refund', 'explained', Math.abs(order.refund || payout.amount), `Refund carried through for ${order.reference}`, 'A refund or negative settlement is present. The order net matches the processor amount, with any disclosed fee, and the processor amount matches the ledger.', { order, processor: payout, ledger: ledgerRow }, [`Order after refund ${expected.toFixed(2)}`, `Processor fee ${payout.fee.toFixed(2)}`, `Processor ${payout.amount.toFixed(2)}`, `Ledger ${ledgerRow.amount.toFixed(2)}`]));
     } else if (feeFits && ledgerFits) {
       findings.push(finding('processor_fee', 'explained', payout.fee, `Expected fee on ${order.reference}`, 'Order less the disclosed processor fee equals the payout, and that net amount appears in the ledger.', { order, processor: payout, ledger: ledgerRow }, [`Order ${expected.toFixed(2)}`, `Fee ${payout.fee.toFixed(2)}`, `Processor and ledger ${payout.amount.toFixed(2)}`]));
-    } else if (dateGap > 0 && ledgerFits) {
+    } else if (dateGap > 0 && close(expected, payout.amount) && ledgerFits) {
       findings.push(finding('timing', 'explained', payout.amount, `${dateGap}-day timing shift for ${order.reference}`, `The amounts agree but the processor settled on a later date inside the configured window.`, { order, processor: payout, ledger: ledgerRow }, [`Order date ${order.date}`, `Processor date ${payout.date}`, `Ledger date ${ledgerRow.date}`]));
     } else if (close(expected, payout.amount) && ledgerFits) {
       findings.push(finding('balanced', 'explained', payout.amount, `${order.reference} balances`, 'Order, processor, and ledger amounts agree within two cents.', { order, processor: payout, ledger: ledgerRow }, [`Order ${expected.toFixed(2)}`, `Processor ${payout.amount.toFixed(2)}`, `Ledger ${ledgerRow.amount.toFixed(2)}`]));

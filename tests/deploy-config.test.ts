@@ -5,6 +5,7 @@ const deploymentConfig = config as {
   globalHeaders: Record<string, string>;
   mimeTypes: Record<string, string>;
   routes: { route: string; headers: Record<string, string> }[];
+  responseOverrides: Record<string, { rewrite: string }>;
 };
 
 describe('static deployment response policy', () => {
@@ -14,5 +15,6 @@ describe('static deployment response policy', () => {
     expect(deploymentConfig.globalHeaders['X-Frame-Options']).toBe('DENY');
     expect(deploymentConfig.mimeTypes['.webmanifest']).toBe('application/manifest+json');
     expect(deploymentConfig.routes.find((route) => route.route === '/assets/*')?.headers['Cache-Control']).toContain('immutable');
+    expect(deploymentConfig.responseOverrides['404']?.rewrite).toBe('/404.html');
   });
 });
